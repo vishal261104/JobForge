@@ -1,0 +1,69 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+#  QueueForge — Docker Compose
+#  Full implementation in Stage 13.
+#  Run: docker compose up
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: jobforge-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: jobforge-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: jobforge
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Application (stubs — completed in Stage 13) ─────────────
+
+  # api:
+  #   build: .
+  #   container_name: jobforge-api
+  #   ports:
+  #     - "${PORT:-3000}:3000"
+  #   env_file: .env
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     mongo:
+  #       condition: service_healthy
+  #   command: npm start
+
+  # worker:
+  #   build: .
+  #   container_name: jobforge-worker
+  #   env_file: .env
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     mongo:
+  #       condition: service_healthy
+  #   command: npm run worker
+
+volumes:
+  redis_data:
+  mongo_data:
