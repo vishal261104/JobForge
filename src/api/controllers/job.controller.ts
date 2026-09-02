@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import Job from '../../models/Job';
 import { JobStatus, JobPriority } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
+import { enqueueJob } from '../../queue/queue';
+import logger from '../../utils/logger';
 
 // ── Create Job ────────────────────────────────────────────────
 
@@ -19,6 +21,7 @@ export async function createJob(req: Request, res: Response): Promise<void> {
   const userId = new mongoose.Types.ObjectId(req.user!.id);
   const isScheduled = scheduledAt && new Date(scheduledAt) > new Date();
 
+  // 1. Persist the job to MongoDB first
   const job = await Job.create({
     jobId: uuidv4(),
     userId,
@@ -31,6 +34,22 @@ export async function createJob(req: Request, res: Response): Promise<void> {
     attempts: 0,
     errorHistory: [],
   });
+
+  // 2. Enqueue into BullMQ (handles delay for scheduled jobs automatically)
+  try {
+    const bullJobId = await enqueueJob(job);
+
+    // 3. Store the BullMQ job ID back on the Mongoose document for cross-referencing
+    job.bullJobId = bullJobId;
+    await job.save();
+  } catch (queueErr) {
+    // The job is safely in MongoDB — log the queue error but don't fail the request.
+    // A background recovery process can re-queue stuck PENDING jobs if needed.
+    logger.error(
+      { err: queueErr, jobId: job.jobId },
+      '⚠️  Job saved to DB but failed to enqueue in BullMQ'
+    );
+  }
 
   sendSuccess(res, job, 'Job created successfully', 201);
 }
@@ -138,7 +157,7 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // If it was in the dead-letter queue, reset the attempt counter so it gets fresh retries
+  // Reset attempt counter for DEAD jobs so they get a full set of retries
   if (job.status === JobStatus.DEAD) {
     job.attempts = 0;
   }
@@ -146,6 +165,18 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
   job.status = JobStatus.PENDING;
   job.error = undefined;
   await job.save();
+
+  // Re-enqueue in BullMQ
+  try {
+    const bullJobId = await enqueueJob(job);
+    job.bullJobId = bullJobId;
+    await job.save();
+  } catch (queueErr) {
+    logger.error(
+      { err: queueErr, jobId: job.jobId },
+      '⚠️  Job status reset to PENDING but re-enqueue in BullMQ failed'
+    );
+  }
 
   sendSuccess(res, job, 'Job re-queued for processing');
 }
