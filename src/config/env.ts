@@ -43,6 +43,11 @@ const envSchema = z.object({
   // Worker
   WORKER_CONCURRENCY: z.string().default('5').transform(Number),
 
+  // Retry / Backoff (Stage 5)
+  /** Base delay in ms for the first retry. Subsequent retries use exponential backoff: delay * 2^attempt */
+  BACKOFF_BASE_DELAY: z.string().default('1000').transform(Number),
+  BACKOFF_TYPE: z.enum(['exponential', 'fixed']).default('exponential'),
+
   // Logging
   LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])

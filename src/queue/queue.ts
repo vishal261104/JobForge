@@ -2,6 +2,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { bullRedisConnection } from '../config/redis';
 import { IJob } from '../models/Job';
 import logger from '../utils/logger';
+import env from '../config/env';
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -67,8 +68,8 @@ export async function enqueueJob(job: IJob): Promise<string> {
     priority: job.priority as number, // 1=HIGH, 5=MEDIUM, 10=LOW
     attempts: job.maxAttempts,
     backoff: {
-      type: 'exponential',
-      delay: 1_000, // 1 s → 2 s → 4 s → 8 s …
+      type: env.BACKOFF_TYPE,
+      delay: env.BACKOFF_BASE_DELAY, // e.g. 1000 ms → 2000 ms → 4000 ms (exponential)
     },
     ...(delay > 0 && { delay }),
     removeOnComplete: { count: 1_000, age: 60 * 60 * 24 },

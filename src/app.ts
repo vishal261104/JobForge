@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import apiRouter from './api/routes';
+import { globalRateLimiter } from './api/middlewares/rateLimit.middleware';
 import { ApiResponse } from './types';
 import logger from './utils/logger';
 
@@ -21,6 +22,10 @@ export function createApp(): Application {
       credentials: true,
     })
   );
+
+  // ── Global IP Rate Limiter (Stage 8) ─────────────────────────
+  // Applied before routes — protects unauthenticated endpoints too.
+  app.use(globalRateLimiter);
 
   // ── Body Parsing ─────────────────────────────────────────────
   app.use(express.json({ limit: '1mb' }));

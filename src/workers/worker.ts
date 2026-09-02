@@ -16,7 +16,7 @@
  */
 
 import 'dotenv/config';
-import { Worker, Job as BullJob } from 'bullmq';
+import { Worker, Job as BullJob, UnrecoverableError } from 'bullmq';
 import { bullRedisConnection } from '../config/redis';
 import { connectDB, disconnectDB } from '../config/db';
 import { disconnectRedis } from '../config/redis';
@@ -24,6 +24,7 @@ import { QUEUE_NAME, QueueJobData } from '../queue/queue';
 import { dispatch } from '../queue/processors';
 import Job from '../models/Job';
 import { JobStatus } from '../types';
+import { computeNextRetryAt } from '../utils/retry';
 import env from '../config/env';
 import logger from '../utils/logger';
 
@@ -91,6 +92,7 @@ async function bootstrap(): Promise<void> {
             result,
             completedAt: new Date(),
             error: null,
+            nextRetryAt: null, // clear any previous retry timestamp
           },
         }
       );
@@ -105,12 +107,19 @@ async function bootstrap(): Promise<void> {
     if (!bullJob) return;
 
     const { jobId } = bullJob.data;
-    const attemptsUsed = bullJob.attemptsMade;           // how many attempts BullMQ has made
-    const maxAttempts  = bullJob.opts?.attempts ?? 1;    // configured max
+    const attemptsUsed = bullJob.attemptsMade;
+    const maxAttempts  = bullJob.opts?.attempts ?? 1;
 
-    // Determine if BullMQ will retry or if this is the final failure
-    const hasRetriesLeft = attemptsUsed < maxAttempts;
-    const newStatus = hasRetriesLeft ? JobStatus.FAILED : JobStatus.DEAD;
+    // UnrecoverableError (including NonRetryableError) bypasses all retries —
+    // BullMQ marks them as permanently failed regardless of remaining attempts.
+    const isUnrecoverable = error instanceof UnrecoverableError;
+    const hasRetriesLeft  = !isUnrecoverable && attemptsUsed < maxAttempts;
+    const newStatus       = hasRetriesLeft ? JobStatus.FAILED : JobStatus.DEAD;
+
+    // Compute when BullMQ will fire the next retry so API consumers can display it
+    const nextRetryAt = hasRetriesLeft
+      ? computeNextRetryAt(attemptsUsed, env.BACKOFF_BASE_DELAY, env.BACKOFF_TYPE)
+      : null;
 
     logger.warn(
       {
@@ -118,7 +127,9 @@ async function bootstrap(): Promise<void> {
         bullJobId: bullJob.id,
         attemptsUsed,
         maxAttempts,
+        isUnrecoverable,
         willRetry: hasRetriesLeft,
+        nextRetryAt,
         error: error.message,
       },
       `❌  Job failed → ${newStatus}`
@@ -131,6 +142,7 @@ async function bootstrap(): Promise<void> {
           $set: {
             status: newStatus,
             error: error.message,
+            nextRetryAt,
           },
           $push: {
             errorHistory: {

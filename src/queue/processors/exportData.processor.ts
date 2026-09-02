@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { QueueJobData } from '../queue';
 import { ExportDataPayload } from '../../types';
 import JobModel from '../../models/Job';
+import { NonRetryableError } from '../../utils/retry';
 import logger from '../../utils/logger';
 
 /**
@@ -28,7 +29,7 @@ export async function exportDataProcessor(
   // ── Step 1: Validate (10%)
   await job.updateProgress(10);
   if (!payload.entity || !payload.format) {
-    throw new Error('Export payload missing required fields: entity, format');
+    throw new NonRetryableError('Export payload missing required fields: entity, format');
   }
 
   // ── Step 2: Build query & stream rows (40%)

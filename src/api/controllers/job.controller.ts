@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Job from '../../models/Job';
 import { JobStatus, JobPriority } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
-import { enqueueJob } from '../../queue/queue';
+import { enqueueJob, jobQueue } from '../../queue/queue';
 import logger from '../../utils/logger';
 
 // ── Create Job ────────────────────────────────────────────────
@@ -179,4 +179,127 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
   }
 
   sendSuccess(res, job, 'Job re-queued for processing');
+}
+
+// ── Update Job Priority (Stage 6) ──────────────────────────────────
+
+/**
+ * PATCH /api/v1/jobs/:id/priority
+ * Update the priority of a PENDING or SCHEDULED job.
+ *
+ * Strategy: remove the existing BullMQ job and re-enqueue with the new
+ * priority. The job data and processor remain the same.
+ */
+export async function updateJobPriority(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { priority } = req.body as { priority: JobPriority };
+  const userId = new mongoose.Types.ObjectId(req.user!.id);
+
+  const job = await Job.findOne({ jobId: id, userId });
+  if (!job) {
+    sendError(res, 'Job not found', 404);
+    return;
+  }
+
+  const modifiable: JobStatus[] = [JobStatus.PENDING, JobStatus.SCHEDULED];
+  if (!modifiable.includes(job.status)) {
+    sendError(
+      res,
+      `Cannot update priority for a job with status "${job.status}". Only PENDING or SCHEDULED jobs can be re-prioritised.`,
+      422
+    );
+    return;
+  }
+
+  if (job.priority === priority) {
+    sendSuccess(res, job, 'Priority unchanged — job already has that priority');
+    return;
+  }
+
+  // Remove the old BullMQ job (if it still exists in the queue)
+  if (job.bullJobId) {
+    try {
+      const bullJob = await jobQueue.getJob(job.bullJobId);
+      if (bullJob) await bullJob.remove();
+    } catch (err) {
+      // Log but don't fail — the job may have already been picked up
+      logger.warn({ err, jobId: id, bullJobId: job.bullJobId }, '⚠️  Could not remove old BullMQ job during priority update');
+    }
+  }
+
+  // Update priority in MongoDB
+  job.priority = priority;
+  await job.save();
+
+  // Re-enqueue with updated priority
+  try {
+    const bullJobId = await enqueueJob(job);
+    job.bullJobId = bullJobId;
+    await job.save();
+  } catch (queueErr) {
+    logger.error({ err: queueErr, jobId: id }, '⚠️  Priority updated in DB but BullMQ re-enqueue failed');
+  }
+
+  logger.info({ jobId: id, oldPriority: job.priority, newPriority: priority }, '🔄  Job priority updated');
+  sendSuccess(res, job, `Job priority updated to ${
+    priority === JobPriority.HIGH ? 'HIGH' : priority === JobPriority.MEDIUM ? 'MEDIUM' : 'LOW'
+  }`);
+}
+
+// ── Reschedule Job (Stage 6) ───────────────────────────────────────
+
+/**
+ * PATCH /api/v1/jobs/:id/schedule
+ * Update the scheduled run time of a PENDING or SCHEDULED job.
+ *
+ * Strategy: remove the old BullMQ job, update MongoDB with the new
+ * scheduledAt, then re-enqueue with the recalculated delay.
+ */
+export async function rescheduleJob(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { scheduledAt } = req.body as { scheduledAt: Date };
+  const userId = new mongoose.Types.ObjectId(req.user!.id);
+
+  const job = await Job.findOne({ jobId: id, userId });
+  if (!job) {
+    sendError(res, 'Job not found', 404);
+    return;
+  }
+
+  const reschedulable: JobStatus[] = [JobStatus.PENDING, JobStatus.SCHEDULED];
+  if (!reschedulable.includes(job.status)) {
+    sendError(
+      res,
+      `Cannot reschedule a job with status "${job.status}". Only PENDING or SCHEDULED jobs can be rescheduled.`,
+      422
+    );
+    return;
+  }
+
+  // Remove the old BullMQ job
+  if (job.bullJobId) {
+    try {
+      const bullJob = await jobQueue.getJob(job.bullJobId);
+      if (bullJob) await bullJob.remove();
+    } catch (err) {
+      logger.warn({ err, jobId: id, bullJobId: job.bullJobId }, '⚠️  Could not remove old BullMQ job during reschedule');
+    }
+  }
+
+  // Update MongoDB
+  job.scheduledAt = scheduledAt;
+  job.status = JobStatus.SCHEDULED;
+  await job.save();
+
+  // Re-enqueue with new delay
+  try {
+    const bullJobId = await enqueueJob(job);
+    job.bullJobId = bullJobId;
+    await job.save();
+  } catch (queueErr) {
+    logger.error({ err: queueErr, jobId: id }, '⚠️  Reschedule saved in DB but BullMQ re-enqueue failed');
+  }
+
+  logger.info({ jobId: id, scheduledAt }, '🗓️  Job rescheduled');
+  sendSuccess(res, job, `Job rescheduled to ${scheduledAt.toISOString()}`);
 }

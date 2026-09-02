@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { QueueJobData } from '../queue';
 import { SendEmailPayload } from '../../types';
 import JobModel from '../../models/Job';
+import { NonRetryableError } from '../../utils/retry';
 import logger from '../../utils/logger';
 
 /**
@@ -25,7 +26,7 @@ export async function sendEmailProcessor(
   // ── Step 1: Validate required fields (10%)
   await job.updateProgress(10);
   if (!payload.to || !payload.subject) {
-    throw new Error('Email payload missing required fields: to, subject');
+    throw new NonRetryableError('Email payload missing required fields: to, subject');
   }
 
   // ── Step 2: Build the message (30%)

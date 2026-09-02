@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { QueueJobData } from '../queue';
 import { GenerateReportPayload } from '../../types';
 import JobModel from '../../models/Job';
+import { NonRetryableError } from '../../utils/retry';
 import logger from '../../utils/logger';
 
 /**
@@ -28,7 +29,7 @@ export async function generateReportProcessor(
   // ── Step 1: Validate parameters (10%)
   await job.updateProgress(10);
   if (!payload.reportType || !payload.format) {
-    throw new Error('Report payload missing required fields: reportType, format');
+    throw new NonRetryableError('Report payload missing required fields: reportType, format');
   }
 
   // ── Step 2: Query data sources (35%)

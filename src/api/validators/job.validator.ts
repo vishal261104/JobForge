@@ -21,6 +21,9 @@ export const createJobSchema = z.object({
     scheduledAt: z
       .string()
       .datetime({ message: 'scheduledAt must be a valid ISO 8601 datetime string' })
+      .refine((v) => new Date(v) > new Date(), {
+        message: 'scheduledAt must be a future datetime',
+      })
       .optional()
       .transform((v) => (v ? new Date(v) : undefined)),
   }),
@@ -51,4 +54,38 @@ export const listJobsSchema = z.object({
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>['body'];
-export type ListJobsQuery = z.infer<typeof listJobsSchema>['query'];
+export type ListJobsQuery  = z.infer<typeof listJobsSchema>['query'];
+
+// ── Update Priority ───────────────────────────────────────────
+
+export const updatePrioritySchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Job id must be a valid UUID' }),
+  }),
+  body: z.object({
+    priority: z.nativeEnum(JobPriority, {
+      errorMap: () => ({ message: 'priority must be 1 (HIGH), 5 (MEDIUM), or 10 (LOW)' }),
+    }),
+  }),
+});
+
+export type UpdatePriorityInput = z.infer<typeof updatePrioritySchema>['body'];
+
+// ── Reschedule Job ────────────────────────────────────────────
+
+export const rescheduleJobSchema = z.object({
+  params: z.object({
+    id: z.string().uuid({ message: 'Job id must be a valid UUID' }),
+  }),
+  body: z.object({
+    scheduledAt: z
+      .string()
+      .datetime({ message: 'scheduledAt must be a valid ISO 8601 datetime string' })
+      .refine((v) => new Date(v) > new Date(), {
+        message: 'scheduledAt must be a future datetime',
+      })
+      .transform((v) => new Date(v)),
+  }),
+});
+
+export type RescheduleJobInput = z.infer<typeof rescheduleJobSchema>['body'];

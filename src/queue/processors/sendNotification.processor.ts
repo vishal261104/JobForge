@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { QueueJobData } from '../queue';
 import { SendNotificationPayload } from '../../types';
 import JobModel from '../../models/Job';
+import { NonRetryableError } from '../../utils/retry';
 import logger from '../../utils/logger';
 
 // Channel → simulated latency profile (ms)
@@ -36,7 +37,7 @@ export async function sendNotificationProcessor(
   // ── Step 1: Validate (10%)
   await job.updateProgress(10);
   if (!payload.userId || !payload.channel || !payload.title || !payload.message) {
-    throw new Error(
+    throw new NonRetryableError(
       'Notification payload missing required fields: userId, channel, title, message'
     );
   }

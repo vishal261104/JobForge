@@ -38,6 +38,9 @@ export interface IJob extends Document {
   /** When the job finished successfully */
   completedAt?: Date;
 
+  /** When the next retry attempt will fire (populated after a failure) */
+  nextRetryAt?: Date;
+
   /** The most recent error message (for failed/dead jobs) */
   error?: string;
 
@@ -137,6 +140,11 @@ const jobSchema = new Schema<IJob, IJobModel>(
     },
 
     completedAt: {
+      type: Date,
+      default: null,
+    },
+
+    nextRetryAt: {
       type: Date,
       default: null,
     },

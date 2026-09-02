@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { QueueJobData } from '../queue';
 import { ProcessImagePayload } from '../../types';
 import JobModel from '../../models/Job';
+import { NonRetryableError } from '../../utils/retry';
 import logger from '../../utils/logger';
 
 /**
@@ -28,7 +29,7 @@ export async function processImageProcessor(
   // ── Step 1: Validate (10%)
   await job.updateProgress(10);
   if (!payload.imageUrl || !payload.operations?.length) {
-    throw new Error('Image payload missing required fields: imageUrl, operations');
+    throw new NonRetryableError('Image payload missing required fields: imageUrl, operations');
   }
 
   // ── Step 2: Download source image (30%)
