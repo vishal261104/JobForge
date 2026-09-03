@@ -10,6 +10,7 @@ import {
   getDLQStats,
   retryAllDeadLetterJobs,
   getJobStats,
+  getQueueMetrics,
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -17,10 +18,13 @@ const router = Router();
 // All admin routes require a valid JWT AND the ADMIN role
 router.use(authenticate, authorize(UserRole.ADMIN));
 
-// ── Platform Stats ────────────────────────────────────────────
+// ── Platform Stats & Metrics ──────────────────────────────────
 
 // GET  /api/v1/admin/stats
 router.get('/stats', asyncHandler(getJobStats));
+
+// GET  /api/v1/admin/metrics  — live BullMQ counts + throughput
+router.get('/metrics', asyncHandler(getQueueMetrics));
 
 // ── Dead-Letter Queue ─────────────────────────────────────────
 

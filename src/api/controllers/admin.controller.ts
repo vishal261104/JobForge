@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 import Job from '../../models/Job';
 import { JobStatus, JobType } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
-import { enqueueJob } from '../../queue/queue';
+import { enqueueJob, jobQueue } from '../../queue/queue';
+import env from '../../config/env';
 import logger from '../../utils/logger';
 
 // ── List Dead-Letter Jobs ────────────────────────────────────
@@ -293,6 +294,83 @@ export async function getJobStats(req: Request, res: Response): Promise<void> {
     throughput: {
       last1h: throughput1h,
       last24h: throughput24h,
+    },
+  });
+}
+
+// ── Queue Metrics (Stage 9) ────────────────────────────────────────────
+
+/**
+ * GET /api/v1/admin/metrics
+ * Real-time queue health metrics:
+ *   - Live BullMQ job counts (waiting, active, failed, delayed)
+ *   - MongoDB-side throughput: completed / failed in last 1h and 15m
+ *   - Error rate percentage
+ *   - Worker concurrency configuration
+ */
+export async function getQueueMetrics(_req: Request, res: Response): Promise<void> {
+  const since1h  = new Date(Date.now() - 60 * 60 * 1000);
+  const since15m = new Date(Date.now() - 15 * 60 * 1000);
+
+  // Run BullMQ and MongoDB queries concurrently
+  const [
+    counts,
+    isPaused,
+    completedLast1h,
+    failedLast1h,
+    completedLast15m,
+    failedLast15m,
+    processingNow,
+  ] = await Promise.all([
+    jobQueue.getJobCounts('waiting', 'active', 'completed', 'failed', 'delayed', 'paused'),
+    jobQueue.isPaused(),
+    Job.countDocuments({ status: JobStatus.COMPLETED, completedAt: { $gte: since1h } }),
+    Job.countDocuments({ status: JobStatus.DEAD,      updatedAt:   { $gte: since1h } }),
+    Job.countDocuments({ status: JobStatus.COMPLETED, completedAt: { $gte: since15m } }),
+    Job.countDocuments({ status: JobStatus.DEAD,      updatedAt:   { $gte: since15m } }),
+    Job.countDocuments({ status: JobStatus.PROCESSING }),
+  ]);
+
+  const total1h  = completedLast1h + failedLast1h;
+  const total15m = completedLast15m + failedLast15m;
+
+  sendSuccess(res, {
+    queue: {
+      name: jobQueue.name,
+      isPaused,
+      counts: {
+        waiting:   counts.waiting,
+        active:    counts.active,
+        delayed:   counts.delayed,
+        paused:    counts.paused,
+        completed: counts.completed, // Redis-stored completed (recent window)
+        failed:    counts.failed,    // Redis-stored failed (recent window)
+      },
+    },
+    worker: {
+      concurrency: env.WORKER_CONCURRENCY,
+      activeNow:   processingNow,
+    },
+    throughput: {
+      last1h: {
+        completed:    completedLast1h,
+        failed:       failedLast1h,
+        errorRate:    total1h > 0 ? +((failedLast1h  / total1h)  * 100).toFixed(2) : 0,
+      },
+      last15m: {
+        completed:    completedLast15m,
+        failed:       failedLast15m,
+        errorRate:    total15m > 0 ? +((failedLast15m / total15m) * 100).toFixed(2) : 0,
+        jobsPerMinute: +(completedLast15m / 15).toFixed(2),
+      },
+    },
+    backoffConfig: {
+      type:      env.BACKOFF_TYPE,
+      baseDelay: env.BACKOFF_BASE_DELAY,
+    },
+    rateLimits: {
+      free:    env.RATE_LIMIT_FREE,
+      premium: env.RATE_LIMIT_PREMIUM,
     },
   });
 }
