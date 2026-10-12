@@ -456,6 +456,16 @@ export function mountSwagger(app: Application): void {
   // Interactive Swagger UI
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec as object, uiOptions));
 
+  // Redirect root and /docs to /api-docs for better developer experience
+  app.get(['/', '/docs'], (_req, res) => {
+    res.redirect('/api-docs');
+  });
+
+  // Redirect dashboard aliases to Bull Board UI
+  app.get(['/dashboard', '/queues'], (_req, res) => {
+    res.redirect('/admin/queues');
+  });
+
   // Raw OpenAPI JSON for tooling (Postman import, code gen, etc.)
   app.get('/api-docs.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');

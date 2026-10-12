@@ -5,6 +5,7 @@ import apiRouter from './api/routes';
 import { globalRateLimiter } from './api/middlewares/rateLimit.middleware';
 import { healthCheck } from './api/controllers/health.controller';
 import { mountSwagger } from './config/swagger';
+import { mountBullBoard } from './config/bullBoard';
 import { ApiResponse } from './types';
 import logger from './utils/logger';
 
@@ -14,7 +15,8 @@ export function createApp(): Application {
   const app = express();
 
   // ── Security Middleware ──────────────────────────────────────
-  app.use(helmet());
+  // CSP disabled so Swagger UI and Bull Board UI dashboards render styles/scripts
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(
     cors({
       origin:
@@ -42,6 +44,9 @@ export function createApp(): Application {
 
   // ── Swagger UI (Stage 11) ────────────────────────────────────
   mountSwagger(app);
+
+  // ── Bull Board UI (Stage 13) ─────────────────────────────────
+  mountBullBoard(app);
 
   // ── 404 Handler ──────────────────────────────────────────────
   app.use((req: Request, res: Response) => {

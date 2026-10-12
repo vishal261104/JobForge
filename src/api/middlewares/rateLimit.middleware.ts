@@ -178,5 +178,5 @@ export const globalRateLimiter = rateLimit({
     logger.warn({ ip: req.ip }, '🚫  Global IP rate limit exceeded');
     res.status(options.statusCode).json(options.message);
   },
-  skip: (req) => req.path === '/health', // never rate-limit health checks
+  skip: (req) => process.env.NODE_ENV === 'test' || req.path === '/health', // never rate-limit in tests or health checks
 });

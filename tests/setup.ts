@@ -67,6 +67,7 @@ vi.mock('../src/queue/queue', () => ({
     }),
     isPaused: vi.fn().mockResolvedValue(false),
     name: 'jobforge-test',
+    metaValues: { version: 'bullmq-5.4.2' },
     on:   vi.fn(),
   },
   enqueueJob: vi.fn().mockResolvedValue('bull-mock-id'),

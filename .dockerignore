@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.git
+.gitignore
+.env
+.env.test
+.env.local
+.vitest-cache
+logs
+*.log
+npm-debug.log*
