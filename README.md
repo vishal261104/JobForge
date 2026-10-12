@@ -210,17 +210,17 @@ docker compose up redis mongo
 |-------|--------|-------------|
 | 1 | ✅ Done | Project scaffold + TypeScript setup |
 | 2 | ✅ Done | MongoDB + Mongoose models |
-| 3 | 🔜 Next | Auth API (register/login/JWT) |
-| 4 | 🔜 | Job CRUD API |
-| 5 | 🔜 | BullMQ queue integration |
-| 6 | 🔜 | Worker system |
-| 7 | 🔜 | Retry + exponential backoff |
-| 8 | 🔜 | Priority + delayed jobs |
-| 9 | 🔜 | Dead-letter queue |
-| 10 | 🔜 | Rate limiting |
-| 11 | 🔜 | Swagger/OpenAPI docs |
-| 12 | 🔜 | Test suite (Vitest + Supertest) |
-| 13 | 🔜 | Docker + Docker Compose |
+| 3 | ✅ Done | Auth API (register/login/JWT) |
+| 4 | ✅ Done | Job CRUD API |
+| 5 | ✅ Done | BullMQ queue integration |
+| 6 | ✅ Done | Worker system |
+| 7 | ✅ Done | Retry + exponential backoff |
+| 8 | ✅ Done | Priority + delayed jobs |
+| 9 | ✅ Done | Dead-letter queue |
+| 10 | ✅ Done | Rate limiting |
+| 11 | ✅ Done | Swagger/OpenAPI docs |
+| 12 | ✅ Done | Test suite (Vitest + Supertest) |
+| 13 | ✅ Done | Docker + Docker Compose |
 
 ---
 

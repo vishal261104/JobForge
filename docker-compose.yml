@@ -38,31 +38,47 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Application (stubs — completed in Stage 13) ─────────────
+  # ── Application ───────────────────────────────────────────────
 
-  # api:
-  #   build: .
-  #   container_name: jobforge-api
-  #   ports:
-  #     - "${PORT:-3000}:3000"
-  #   env_file: .env
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #     mongo:
-  #       condition: service_healthy
-  #   command: npm start
+  api:
+    build: .
+    container_name: jobforge-api
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    command: node dist/server.js
 
-  # worker:
-  #   build: .
-  #   container_name: jobforge-worker
-  #   env_file: .env
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #     mongo:
-  #       condition: service_healthy
-  #   command: npm run worker
+  worker:
+    build: .
+    container_name: jobforge-worker
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    command: node dist/workers/worker.js
 
 volumes:
   redis_data:
