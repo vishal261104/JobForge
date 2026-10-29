@@ -25,6 +25,7 @@ import { dispatch } from '../queue/processors';
 import Job from '../models/Job';
 import { JobStatus } from '../types';
 import { computeNextRetryAt } from '../utils/retry';
+import { publishJobEvent } from '../utils/eventBus';
 import env from '../config/env';
 import logger from '../utils/logger';
 
@@ -58,7 +59,7 @@ async function bootstrap(): Promise<void> {
   // ── Event: Job is being processed ───────────────────────────
 
   worker.on('active', async (bullJob: BullJob<QueueJobData>) => {
-    const { jobId } = bullJob.data;
+    const { jobId, userId, type } = bullJob.data;
     logger.info(
       { jobId, bullJobId: bullJob.id, attempt: bullJob.attemptsMade + 1 },
       '🔄  Job activated — setting status to PROCESSING'
@@ -72,15 +73,44 @@ async function bootstrap(): Promise<void> {
           $inc: { attempts: 1 },
         }
       );
+
+      // Broadcast real-time status update
+      await publishJobEvent({
+        jobId,
+        userId,
+        type,
+        status: JobStatus.PROCESSING,
+        progress: 0,
+        attempts: bullJob.attemptsMade + 1,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       logger.error({ err, jobId }, '⚠️  Failed to update job status to PROCESSING');
     }
   });
 
+  // ── Event: Job progress updated ─────────────────────────────
+
+  worker.on('progress', async (bullJob: BullJob<QueueJobData>, progress: any) => {
+    const { jobId, userId, type } = bullJob.data;
+    const progressPercent = typeof progress === 'number' ? progress : (progress?.percent ?? 0);
+
+    logger.debug({ jobId, progress: progressPercent }, '📈  Job progress updated');
+
+    await publishJobEvent({
+      jobId,
+      userId,
+      type,
+      status: JobStatus.PROCESSING,
+      progress: progressPercent,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // ── Event: Job completed successfully ────────────────────────
 
   worker.on('completed', async (bullJob: BullJob<QueueJobData>, result: Record<string, unknown>) => {
-    const { jobId } = bullJob.data;
+    const { jobId, userId, type } = bullJob.data;
     logger.info({ jobId, bullJobId: bullJob.id }, '✅  Job completed');
 
     try {
@@ -96,6 +126,17 @@ async function bootstrap(): Promise<void> {
           },
         }
       );
+
+      // Broadcast real-time completion
+      await publishJobEvent({
+        jobId,
+        userId,
+        type,
+        status: JobStatus.COMPLETED,
+        progress: 100,
+        result,
+        timestamp: new Date().toISOString(),
+      });
     } catch (err) {
       logger.error({ err, jobId }, '⚠️  Failed to update job status to COMPLETED');
     }
@@ -106,7 +147,7 @@ async function bootstrap(): Promise<void> {
   worker.on('failed', async (bullJob: BullJob<QueueJobData> | undefined, error: Error) => {
     if (!bullJob) return;
 
-    const { jobId } = bullJob.data;
+    const { jobId, userId, type } = bullJob.data;
     const attemptsUsed = bullJob.attemptsMade;
     const maxAttempts  = bullJob.opts?.attempts ?? 1;
 
@@ -153,6 +194,18 @@ async function bootstrap(): Promise<void> {
           },
         }
       );
+
+      // Broadcast real-time failure or DLQ transition
+      await publishJobEvent({
+        jobId,
+        userId,
+        type,
+        status: newStatus,
+        error: error.message,
+        attempts: attemptsUsed,
+        nextRetryAt,
+        timestamp: new Date().toISOString(),
+      });
     } catch (dbErr) {
       logger.error({ dbErr, jobId }, `⚠️  Failed to update job status to ${newStatus}`);
     }

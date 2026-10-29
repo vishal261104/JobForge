@@ -433,6 +433,122 @@ const spec = {
         responses: { 200: { description: 'Job re-queued' }, 404: { description: 'Not found' } },
       },
     },
+
+    // ── Real-Time Event Streaming ──────────────────────────────
+
+    '/jobs/{id}/events': {
+      get: {
+        tags: ['Real-Time Streaming'],
+        summary: 'Stream live job progress via Server-Sent Events (SSE)',
+        description: 'Native SSE stream emitting initial snapshot, real-time progress percentages (10%, 30%, 60%, 100%), and terminal status events. Authenticates via Authorization header or ?token= query parameter.',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'token', in: 'query', required: false, schema: { type: 'string' }, description: 'JWT token for native browser EventSource' },
+        ],
+        responses: {
+          200: { description: 'SSE Event Stream (text/event-stream)' },
+          401: { description: 'Unauthorized' },
+          403: { description: 'Forbidden: not your job' },
+          404: { description: 'Job not found' },
+        },
+      },
+    },
+
+    '/jobs/events': {
+      get: {
+        tags: ['Real-Time Streaming'],
+        summary: 'Stream all job updates for the authenticated user (SSE)',
+        description: 'Subscribes to Redis Pub/Sub channel for all jobs owned by the user. Broadcasts updates as workers process them.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'SSE Event Stream (text/event-stream)' },
+          401: { description: 'Unauthorized' },
+        },
+      },
+    },
+
+    '/jobs/{id}/live': {
+      get: {
+        tags: ['Real-Time Streaming'],
+        summary: 'Interactive HTML Live Progress Viewer',
+        description: 'Returns a standalone web page that connects to the SSE stream and animates a real-time progress bar with live JSON updates.',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'token', in: 'query', required: false, schema: { type: 'string' }, description: 'Optional JWT token' },
+        ],
+        responses: {
+          200: { description: 'HTML page' },
+        },
+      },
+    },
+
+    // ── Billing & Stripe Payment Gateway ───────────────────────
+
+    '/billing/config': {
+      get: {
+        tags: ['Billing & Stripe'],
+        summary: 'Get public pricing and tier specs ($0.50 USD)',
+        description: 'Returns price ($0.50), currency (USD), features, and live Stripe readiness status.',
+        security: [],
+        responses: {
+          200: { description: 'Billing configuration' },
+        },
+      },
+    },
+
+    '/billing/checkout': {
+      post: {
+        tags: ['Billing & Stripe'],
+        summary: 'Create a Stripe Checkout Session ($0.50 USD)',
+        description: 'Creates a Stripe Checkout session to upgrade user to the PREMIUM tier (10,000 jobs/hour limit). Returns official Stripe redirect URL.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  successUrl: { type: 'string', example: 'http://localhost:3000/api/v1/billing/success?session_id={CHECKOUT_SESSION_ID}' },
+                  cancelUrl: { type: 'string', example: 'http://localhost:3000/api/v1/billing/cancel' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Checkout session created with redirect URL' },
+          401: { description: 'Unauthorized' },
+        },
+      },
+    },
+
+    '/billing/webhook': {
+      post: {
+        tags: ['Billing & Stripe'],
+        summary: 'Stripe Webhook Receiver',
+        description: 'Endpoint called by Stripe on checkout.session.completed to cryptographically verify signature and promote user to PREMIUM tier.',
+        security: [],
+        responses: {
+          200: { description: 'Webhook processed' },
+          400: { description: 'Invalid signature or payload' },
+        },
+      },
+    },
+
+    '/billing/simulate-checkout-success': {
+      post: {
+        tags: ['Billing & Stripe'],
+        summary: 'Simulate Payment Success (Dev/Testing)',
+        description: 'Immediately upgrades the authenticated user to the PREMIUM tier for testing rate limits without needing live credit card payments.',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          200: { description: 'User upgraded to PREMIUM' },
+          401: { description: 'Unauthorized' },
+        },
+      },
+    },
   },
 };
 

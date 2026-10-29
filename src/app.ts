@@ -6,6 +6,7 @@ import { globalRateLimiter } from './api/middlewares/rateLimit.middleware';
 import { healthCheck } from './api/controllers/health.controller';
 import { mountSwagger } from './config/swagger';
 import { mountBullBoard } from './config/bullBoard';
+import { mountDLQDashboard } from './config/dlqDashboard';
 import { ApiResponse } from './types';
 import logger from './utils/logger';
 
@@ -32,7 +33,15 @@ export function createApp(): Application {
   app.use(globalRateLimiter);
 
   // ── Body Parsing ─────────────────────────────────────────────
-  app.use(express.json({ limit: '1mb' }));
+  // Captures rawBody buffer for cryptographic Stripe webhook signature verification
+  app.use(
+    express.json({
+      limit: '1mb',
+      verify: (req: Request, _res: Response, buf: Buffer) => {
+        (req as any).rawBody = buf;
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // ── Health Check (Stage 9) ──────────────────────────────────────
@@ -47,6 +56,9 @@ export function createApp(): Application {
 
   // ── Bull Board UI (Stage 13) ─────────────────────────────────
   mountBullBoard(app);
+
+  // ── DLQ Remediation Dashboard ────────────────────────────────
+  mountDLQDashboard(app);
 
   // ── 404 Handler ──────────────────────────────────────────────
   app.use((req: Request, res: Response) => {

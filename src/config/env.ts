@@ -52,6 +52,13 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
     .default('info'),
+
+  // Stripe & Billing
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_CENTS: z.string().default('50').transform(Number), // $0.50 USD minimum
+  STRIPE_CURRENCY: z.string().default('usd'),
+  APP_URL: z.string().default('http://localhost:3000'),
 });
 
 // ── Validate & Export ─────────────────────────────────────────

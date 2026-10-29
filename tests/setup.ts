@@ -39,18 +39,24 @@ if (process.env.MONGODB_URI) {
 
 vi.mock('../src/config/redis', () => {
   const redisMock = {
-    incr:   vi.fn().mockResolvedValue(1),
-    expire: vi.fn().mockResolvedValue(1),
-    ping:   vi.fn().mockResolvedValue('PONG'),
-    quit:   vi.fn().mockResolvedValue('OK'),
-    on:     vi.fn(),
-    status: 'ready',
+    incr:        vi.fn().mockResolvedValue(1),
+    expire:      vi.fn().mockResolvedValue(1),
+    ping:        vi.fn().mockResolvedValue('PONG'),
+    quit:        vi.fn().mockResolvedValue('OK'),
+    publish:     vi.fn().mockResolvedValue(1),
+    subscribe:   vi.fn().mockResolvedValue(1),
+    unsubscribe: vi.fn().mockResolvedValue(1),
+    duplicate:   vi.fn(),
+    on:          vi.fn(),
+    status:      'ready',
   };
+  redisMock.duplicate.mockReturnValue(redisMock);
 
   return {
-    redisClient:         redisMock,
-    bullRedisConnection: { ...redisMock, maxRetriesPerRequest: null },
-    disconnectRedis:     vi.fn().mockResolvedValue(undefined),
+    redisClient:            redisMock,
+    bullRedisConnection:    { ...redisMock, maxRetriesPerRequest: null },
+    createRedisSubscriber:  vi.fn(() => redisMock),
+    disconnectRedis:        vi.fn().mockResolvedValue(undefined),
   };
 });
 

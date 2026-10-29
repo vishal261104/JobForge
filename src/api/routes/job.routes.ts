@@ -18,17 +18,31 @@ import {
   updateJobPriority,
   rescheduleJob,
 } from '../controllers/job.controller';
+import {
+  streamJobEvents,
+  streamUserJobs,
+  renderLiveDemo,
+} from '../controllers/jobStream.controller';
 
 const router = Router();
 
-// All job routes require a valid JWT
+// HTML Live Demo can be viewed in browser with ?token=...
+router.get('/:id/live', asyncHandler(renderLiveDemo));
+
+// All remaining job routes require a valid JWT
 router.use(authenticate);
+
+// GET    /api/v1/jobs/events                — stream all real-time events for authenticated user
+router.get('/events', asyncHandler(streamUserJobs));
 
 // POST   /api/v1/jobs  — submit a new job (rate limited per user tier)
 router.post('/', jobRateLimiter, validate(createJobSchema), asyncHandler(createJob));
 
 // GET    /api/v1/jobs                       — list your jobs (paginated + filterable)
 router.get('/', validate(listJobsSchema), asyncHandler(listJobs));
+
+// GET    /api/v1/jobs/:id/events            — stream real-time events (SSE) for a specific job
+router.get('/:id/events', asyncHandler(streamJobEvents));
 
 // GET    /api/v1/jobs/:id                   — get a specific job's status
 router.get('/:id', asyncHandler(getJob));

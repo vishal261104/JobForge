@@ -179,13 +179,20 @@ See [`.env.example`](.env.example) for all required variables.
 | `POST` | `/api/v1/admin/dead-letter-jobs/:id/retry` | Retry DLQ job (admin) |
 | `GET` | `/health` | Health check |
 | `GET` | `/api-docs` | Swagger UI |
+| `GET` | `/admin/queues` | Bull Board live queue dashboard |
+| `GET` | `/api/v1/jobs/:id/events` | Real-time SSE stream for specific job |
+| `GET` | `/api/v1/jobs/events` | Real-time SSE stream for all user jobs |
+| `GET` | `/api/v1/jobs/:id/live` | Interactive HTML live progress bar |
+| `GET` | `/api/v1/billing/config` | Public billing & tier config ($0.50 USD) |
+| `POST` | `/api/v1/billing/checkout` | Create Stripe Checkout Session ($0.50) |
+| `POST` | `/api/v1/billing/webhook` | Stripe Webhook receiver |
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-npm test                 # Run all tests once
+npm test                 # Run all 129 unit & integration tests
 npm run test:watch       # Watch mode
 npm run test:coverage    # Coverage report
 ```
@@ -220,7 +227,9 @@ docker compose up redis mongo
 | 10 | ✅ Done | Rate limiting |
 | 11 | ✅ Done | Swagger/OpenAPI docs |
 | 12 | ✅ Done | Test suite (Vitest + Supertest) |
-| 13 | ✅ Done | Docker + Docker Compose |
+| 13 | ✅ Done | Docker + Docker Compose + Bull Board UI |
+| 14 | ✅ Done | Live Stripe Payment Gateway ($0.50 USD upgrade to Premium) |
+| 15 | ✅ Done | Real-Time Client Updates (Server-Sent Events + Redis Pub/Sub) |
 
 ---
 

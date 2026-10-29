@@ -57,6 +57,13 @@ export const redisClient = createRedisClient('primary');
  */
 export const bullRedisConnection = createRedisClient('bullmq');
 
+/**
+ * Creates an isolated Redis subscriber connection for Pub/Sub events.
+ */
+export function createRedisSubscriber(label = 'subscriber'): IORedis {
+  return createRedisClient(label);
+}
+
 // ── Graceful Shutdown ─────────────────────────────────────────
 
 export async function disconnectRedis(): Promise<void> {

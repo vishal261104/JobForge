@@ -11,6 +11,8 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   tier: UserTier;
+  stripeCustomerId?: string;
+  stripeSessionId?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -59,6 +61,16 @@ const userSchema = new Schema<IUser, IUserModel>(
       type: String,
       enum: Object.values(UserTier),
       default: UserTier.FREE,
+    },
+
+    stripeCustomerId: {
+      type: String,
+      sparse: true,
+    },
+
+    stripeSessionId: {
+      type: String,
+      sparse: true,
     },
   },
   {

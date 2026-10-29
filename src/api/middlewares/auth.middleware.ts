@@ -8,14 +8,19 @@ import { sendError } from '../../utils/apiResponse';
  * Attaches the decoded user payload to req.user on success.
  */
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
+  let token: string | undefined;
 
-  if (!authHeader?.startsWith('Bearer ')) {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query?.token && typeof req.query.token === 'string') {
+    token = req.query.token;
+  }
+
+  if (!token) {
     sendError(res, 'Authorization token required', 401);
     return;
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = verifyToken(token);

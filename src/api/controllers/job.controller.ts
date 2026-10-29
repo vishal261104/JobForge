@@ -5,6 +5,7 @@ import Job from '../../models/Job';
 import { JobStatus, JobPriority } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
 import { enqueueJob, jobQueue } from '../../queue/queue';
+import { publishJobEvent } from '../../utils/eventBus';
 import logger from '../../utils/logger';
 
 // ── Create Job ────────────────────────────────────────────────
@@ -42,6 +43,14 @@ export async function createJob(req: Request, res: Response): Promise<void> {
     // 3. Store the BullMQ job ID back on the Mongoose document for cross-referencing
     job.bullJobId = bullJobId;
     await job.save();
+
+    await publishJobEvent({
+      jobId: job.jobId,
+      userId: job.userId.toString(),
+      type: job.type,
+      status: job.status,
+      timestamp: new Date().toISOString(),
+    });
   } catch (queueErr) {
     // The job is safely in MongoDB — log the queue error but don't fail the request.
     // A background recovery process can re-queue stuck PENDING jobs if needed.
@@ -132,6 +141,14 @@ export async function cancelJob(req: Request, res: Response): Promise<void> {
   job.status = JobStatus.CANCELLED;
   await job.save();
 
+  await publishJobEvent({
+    jobId: job.jobId,
+    userId: job.userId.toString(),
+    type: job.type,
+    status: JobStatus.CANCELLED,
+    timestamp: new Date().toISOString(),
+  });
+
   sendSuccess(res, job, 'Job cancelled successfully');
 }
 
@@ -171,6 +188,14 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
     const bullJobId = await enqueueJob(job);
     job.bullJobId = bullJobId;
     await job.save();
+
+    await publishJobEvent({
+      jobId: job.jobId,
+      userId: job.userId.toString(),
+      type: job.type,
+      status: JobStatus.PENDING,
+      timestamp: new Date().toISOString(),
+    });
   } catch (queueErr) {
     logger.error(
       { err: queueErr, jobId: job.jobId },
