@@ -115,6 +115,7 @@ function renderDashboardHTML(): string {
       <div class="auth-input-group">
         <input type="password" id="adminTokenInput" class="input" placeholder="Paste ADMIN JWT Token...">
         <button onclick="saveToken()" class="btn btn-primary">Save Token</button>
+        <button onclick="autoLoginAdmin()" class="btn btn-secondary" title="Logs in using default admin credentials">⚡ Quick Admin Login</button>
       </div>
     </div>
 
@@ -213,8 +214,36 @@ function renderDashboardHTML(): string {
       document.getElementById('authStatusText').textContent = '✅ Token Saved';
       document.getElementById('authStatusText').style.color = '#4ade80';
     } else {
-      document.getElementById('authStatusText').textContent = '⚠️ Please paste an ADMIN token to enable buttons';
+      document.getElementById('authStatusText').textContent = '⚠️ Attempting admin auto-login...';
       document.getElementById('authStatusText').style.color = '#facc15';
+      // Automatically attempt login with default admin credentials
+      autoLoginAdmin();
+    }
+
+    async function autoLoginAdmin() {
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'admin@jobforge.com', password: 'AdminPass123!' })
+        });
+        const json = await res.json();
+        if (json.success && json.data && json.data.token) {
+          currentToken = json.data.token;
+          localStorage.setItem('jobforge_admin_token', currentToken);
+          document.getElementById('adminTokenInput').value = currentToken;
+          document.getElementById('authStatusText').textContent = '✅ Authenticated as Admin (admin@jobforge.com)';
+          document.getElementById('authStatusText').style.color = '#4ade80';
+          showToast('Authenticated as Admin');
+          loadDashboard();
+        } else {
+          document.getElementById('authStatusText').textContent = '⚠️ Please paste an ADMIN token to enable buttons';
+          document.getElementById('authStatusText').style.color = '#facc15';
+        }
+      } catch (err) {
+        document.getElementById('authStatusText').textContent = '⚠️ Please paste an ADMIN token to enable buttons';
+        document.getElementById('authStatusText').style.color = '#facc15';
+      }
     }
 
     function saveToken() {

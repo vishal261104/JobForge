@@ -89,6 +89,16 @@ export async function retryDeadLetterJob(req: Request, res: Response): Promise<v
   job.error       = undefined;
   job.nextRetryAt = undefined;
   job.result      = undefined;
+
+  // If this was a simulated error test, clear the flag on admin retry so the job succeeds
+  if (job.payload && (job.payload as Record<string, unknown>).simulateError) {
+    const mutablePayload = { ...(job.payload as Record<string, unknown>) };
+    delete mutablePayload.simulateError;
+    delete mutablePayload.errorMessage;
+    job.payload = mutablePayload;
+    job.markModified('payload');
+  }
+
   // Keep errorHistory for audit purposes — don't clear it
   await job.save();
 
@@ -230,6 +240,15 @@ export async function retryAllDeadLetterJobs(req: Request, res: Response): Promi
       job.attempts    = 0;
       job.error       = undefined;
       job.nextRetryAt = undefined;
+
+      if (job.payload && (job.payload as Record<string, unknown>).simulateError) {
+        const mutablePayload = { ...(job.payload as Record<string, unknown>) };
+        delete mutablePayload.simulateError;
+        delete mutablePayload.errorMessage;
+        job.payload = mutablePayload;
+        job.markModified('payload');
+      }
+
       await job.save();
 
       const bullJobId = await enqueueJob(job);
