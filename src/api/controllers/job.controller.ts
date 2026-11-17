@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import Job from '../../models/Job';
-import { JobStatus, JobPriority } from '../../types';
+import { JobStatus, JobPriority, UserRole } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
 import { enqueueJob, jobQueue, dlqQueue } from '../../queue/queue';
 import { publishJobEvent } from '../../utils/eventBus';
@@ -105,9 +105,12 @@ export async function listJobs(req: Request, res: Response): Promise<void> {
 
 export async function getJob(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const userId = new mongoose.Types.ObjectId(req.user!.id);
+  const filter: Record<string, unknown> = { jobId: id };
+  if (req.user!.role !== UserRole.ADMIN) {
+    filter.userId = new mongoose.Types.ObjectId(req.user!.id);
+  }
 
-  const job = await Job.findOne({ jobId: id, userId });
+  const job = await Job.findOne(filter);
   if (!job) {
     sendError(res, 'Job not found', 404);
     return;
@@ -120,9 +123,12 @@ export async function getJob(req: Request, res: Response): Promise<void> {
 
 export async function cancelJob(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const userId = new mongoose.Types.ObjectId(req.user!.id);
+  const filter: Record<string, unknown> = { jobId: id };
+  if (req.user!.role !== UserRole.ADMIN) {
+    filter.userId = new mongoose.Types.ObjectId(req.user!.id);
+  }
 
-  const job = await Job.findOne({ jobId: id, userId });
+  const job = await Job.findOne(filter);
   if (!job) {
     sendError(res, 'Job not found', 404);
     return;
@@ -156,9 +162,12 @@ export async function cancelJob(req: Request, res: Response): Promise<void> {
 
 export async function retryJob(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const userId = new mongoose.Types.ObjectId(req.user!.id);
+  const filter: Record<string, unknown> = { jobId: id };
+  if (req.user!.role !== UserRole.ADMIN) {
+    filter.userId = new mongoose.Types.ObjectId(req.user!.id);
+  }
 
-  const job = await Job.findOne({ jobId: id, userId });
+  const job = await Job.findOne(filter);
   if (!job) {
     sendError(res, 'Job not found', 404);
     return;
