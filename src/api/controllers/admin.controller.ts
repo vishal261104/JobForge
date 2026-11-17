@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Job from '../../models/Job';
 import { JobStatus, JobType } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
-import { enqueueJob, jobQueue } from '../../queue/queue';
+import { enqueueJob, jobQueue, dlqQueue } from '../../queue/queue';
 import env from '../../config/env';
 import logger from '../../utils/logger';
 
@@ -107,6 +107,12 @@ export async function retryDeadLetterJob(req: Request, res: Response): Promise<v
     const bullJobId = await enqueueJob(job);
     job.bullJobId = bullJobId;
     await job.save();
+
+    // Remove from BullMQ dlqQueue mirror
+    try {
+      const dlqJob = await dlqQueue.getJob(`dlq-${id}`);
+      if (dlqJob) await dlqJob.remove();
+    } catch {}
   } catch (queueErr) {
     logger.error(
       { err: queueErr, jobId: id },
@@ -136,6 +142,12 @@ export async function purgeDeadLetterJob(req: Request, res: Response): Promise<v
     sendError(res, 'Dead-letter job not found', 404);
     return;
   }
+
+  // Remove from BullMQ dlqQueue mirror
+  try {
+    const dlqJob = await dlqQueue.getJob(`dlq-${id}`);
+    if (dlqJob) await dlqJob.remove();
+  } catch {}
 
   logger.warn(
     { jobId: id, type: job.type, adminId: req.user!.id },
@@ -254,6 +266,12 @@ export async function retryAllDeadLetterJobs(req: Request, res: Response): Promi
       const bullJobId = await enqueueJob(job);
       job.bullJobId = bullJobId;
       await job.save();
+
+      // Remove from BullMQ dlqQueue mirror
+      try {
+        const dlqJob = await dlqQueue.getJob(`dlq-${job.jobId}`);
+        if (dlqJob) await dlqJob.remove();
+      } catch {}
 
       requeued++;
     } catch (err) {

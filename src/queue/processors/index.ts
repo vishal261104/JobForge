@@ -6,7 +6,7 @@ import { processImageProcessor } from './processImage.processor';
 import { exportDataProcessor } from './exportData.processor';
 import { sendNotificationProcessor } from './sendNotification.processor';
 import JobModel from '../../models/Job';
-import { JobType } from '../../types';
+import { JobType, JobStatus } from '../../types';
 import logger from '../../utils/logger';
 
 // ── Processor Registry ────────────────────────────────────────
@@ -50,12 +50,27 @@ export async function dispatch(job: Job<QueueJobData>): Promise<Record<string, u
 
   // 1. Simulation: Error / DLQ Trigger
   if (payload.simulateError) {
-    const failUntil = typeof payload.failAttempts === 'number' ? payload.failAttempts : 999;
-    if (job.attemptsMade < failUntil) {
-      throw new Error(
-        payload.errorMessage ||
-          `Simulated 3rd-party service outage on attempt ${job.attemptsMade + 1}`
+    // If this job has already failed and entered remediation (e.g. from Bull Board's retry
+    // button or DLQ dashboard), bypass simulated failures so the remediation succeeds!
+    const isRetriedJob =
+      jobDoc &&
+      ((jobDoc.errorHistory?.length ?? 0) >= (jobDoc.maxAttempts ?? 3) ||
+        jobDoc.status === JobStatus.DEAD ||
+        jobDoc.status === JobStatus.FAILED);
+
+    if (isRetriedJob && !payload.failAttempts) {
+      logger.info(
+        { jobId, type },
+        '♻️   Remediation active: bypassing simulated error on retried dead job'
       );
+    } else {
+      const failUntil = typeof payload.failAttempts === 'number' ? payload.failAttempts : 999;
+      if (job.attemptsMade < failUntil) {
+        throw new Error(
+          payload.errorMessage ||
+            `Simulated 3rd-party service outage on attempt ${job.attemptsMade + 1}`
+        );
+      }
     }
   }
 

@@ -20,7 +20,7 @@ import { Worker, Job as BullJob, UnrecoverableError } from 'bullmq';
 import { bullRedisConnection } from '../config/redis';
 import { connectDB, disconnectDB } from '../config/db';
 import { disconnectRedis } from '../config/redis';
-import { QUEUE_NAME, QueueJobData } from '../queue/queue';
+import { QUEUE_NAME, dlqQueue, QueueJobData } from '../queue/queue';
 import { dispatch } from '../queue/processors';
 import Job from '../models/Job';
 import { JobStatus } from '../types';
@@ -36,6 +36,23 @@ async function bootstrap(): Promise<void> {
 
   // 1. Connect to MongoDB so we can update Job documents
   await connectDB();
+
+  // Sync any existing MongoDB DEAD jobs to the BullMQ dlqQueue so they appear in Bull Board
+  try {
+    const existingDead = await Job.find({ status: JobStatus.DEAD }).select('jobId type userId');
+    for (const dead of existingDead) {
+      const existing = await dlqQueue.getJob(`dlq-${dead.jobId}`);
+      if (!existing) {
+        await dlqQueue.add(
+          dead.type,
+          { jobId: dead.jobId, userId: dead.userId.toString(), type: dead.type },
+          { jobId: `dlq-${dead.jobId}`, removeOnComplete: false, removeOnFail: false }
+        );
+      }
+    }
+  } catch (syncErr) {
+    logger.warn({ err: syncErr }, 'Could not sync existing dead jobs to dlqQueue');
+  }
 
   // 2. Create the BullMQ Worker
   const worker = new Worker<QueueJobData, Record<string, unknown>>(
@@ -137,6 +154,12 @@ async function bootstrap(): Promise<void> {
         result,
         timestamp: new Date().toISOString(),
       });
+
+      // Clear from BullMQ dlqQueue mirror if it was quarantined
+      try {
+        const dlqJob = await dlqQueue.getJob(`dlq-${jobId}`);
+        if (dlqJob) await dlqJob.remove();
+      } catch {}
     } catch (err) {
       logger.error({ err, jobId }, '⚠️  Failed to update job status to COMPLETED');
     }
@@ -206,6 +229,19 @@ async function bootstrap(): Promise<void> {
         nextRetryAt,
         timestamp: new Date().toISOString(),
       });
+
+      // Mirror to BullMQ dlqQueue so it appears under jobforge-dlq in Bull Board
+      if (newStatus === JobStatus.DEAD) {
+        try {
+          await dlqQueue.add(
+            type,
+            { jobId, userId, type },
+            { jobId: `dlq-${jobId}`, removeOnComplete: false, removeOnFail: false }
+          );
+        } catch (dlqErr) {
+          logger.warn({ err: dlqErr, jobId }, 'Failed to mirror dead job to dlqQueue');
+        }
+      }
     } catch (dbErr) {
       logger.error({ dbErr, jobId }, `⚠️  Failed to update job status to ${newStatus}`);
     }
@@ -231,6 +267,7 @@ async function bootstrap(): Promise<void> {
     try {
       // Close the worker — finishes the current job before stopping
       await worker.close();
+      await dlqQueue.close();
       logger.info('🔌  BullMQ Worker closed');
 
       await disconnectDB();

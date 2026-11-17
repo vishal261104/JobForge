@@ -65,6 +65,7 @@ vi.mock('../src/config/redis', () => {
 
 vi.mock('../src/queue/queue', () => ({
   QUEUE_NAME: 'jobforge-test',
+  DLQ_QUEUE_NAME: 'jobforge-dlq-test',
   jobQueue: {
     add:          vi.fn().mockResolvedValue({ id: 'bull-mock-id' }),
     getJob:       vi.fn().mockResolvedValue(null),
@@ -73,6 +74,17 @@ vi.mock('../src/queue/queue', () => ({
     }),
     isPaused: vi.fn().mockResolvedValue(false),
     name: 'jobforge-test',
+    metaValues: { version: 'bullmq-5.4.2' },
+    on:   vi.fn(),
+  },
+  dlqQueue: {
+    add:          vi.fn().mockResolvedValue({ id: 'dlq-mock-id' }),
+    getJob:       vi.fn().mockResolvedValue(null),
+    getJobCounts: vi.fn().mockResolvedValue({
+      waiting: 1, active: 0, completed: 0, failed: 0, delayed: 0, paused: 0,
+    }),
+    isPaused: vi.fn().mockResolvedValue(false),
+    name: 'jobforge-dlq-test',
     metaValues: { version: 'bullmq-5.4.2' },
     on:   vi.fn(),
   },

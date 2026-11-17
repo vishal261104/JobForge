@@ -40,28 +40,35 @@ function renderDashboardHTML(): string {
     .container { max-width: 1200px; margin: 0 auto; }
     
     /* Header */
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
     .logo { font-size: 22px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; }
     .nav-links { display: flex; gap: 12px; }
-    .btn-link { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); transition: all 0.2s; }
-    .btn-link:hover { color: var(--text); border-color: var(--accent); }
+    .btn-link { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-link:hover { color: var(--text); border-color: var(--accent); background: #1e293b; }
+
+    /* Info Banner */
+    .info-banner { background: #0f172a; border: 1px solid #1e3a8a; border-left: 4px solid var(--accent); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: #cbd5e1; }
+    .info-banner b { color: #f8fafc; }
+    .info-banner a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .info-banner a:hover { text-decoration: underline; }
 
     /* Auth Banner */
-    .auth-banner { background: #1e1b4b; border: 1px solid #4338ca; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .auth-input-group { display: flex; gap: 8px; }
-    .input { background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 12px; width: 280px; }
-    .btn { cursor: pointer; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .auth-banner { background: #1e1b4b; border: 1px solid #4338ca; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; flex-wrap: wrap; gap: 10px; }
+    .auth-input-group { display: flex; gap: 8px; align-items: center; }
+    .input { background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 6px; font-size: 12px; width: 280px; }
+    .btn { cursor: pointer; border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: #0284c7; color: white; }
-    .btn-primary:hover { background: #0369a1; }
+    .btn-primary:hover:not(:disabled) { background: #0369a1; }
     .btn-success { background: #059669; color: white; }
-    .btn-success:hover { background: #047857; }
+    .btn-success:hover:not(:disabled) { background: #047857; }
     .btn-danger { background: #dc2626; color: white; }
-    .btn-danger:hover { background: #b91c1c; }
+    .btn-danger:hover:not(:disabled) { background: #b91c1c; }
     .btn-secondary { background: #334155; color: white; }
-    .btn-secondary:hover { background: #475569; }
+    .btn-secondary:hover:not(:disabled) { background: #475569; }
 
     /* Stats Grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
     .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
     .stat-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
     .stat-val { font-size: 26px; font-weight: 700; color: var(--text); }
@@ -69,12 +76,12 @@ function renderDashboardHTML(): string {
     .stat-val.healthy { color: #4ade80; }
 
     /* Action Bar */
-    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
     .filter-group { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--text-muted); }
     select.input { width: 160px; }
 
     /* Table */
-    .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
     th { background: #0f172a; padding: 12px 16px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; }
     td { padding: 14px 16px; border-bottom: 1px solid #26334d; vertical-align: middle; }
@@ -89,8 +96,11 @@ function renderDashboardHTML(): string {
     
     /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 50; }
-    .modal-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; width: 560px; max-width: 90%; padding: 24px; max-height: 80vh; overflow-y: auto; }
-    .modal-title { font-size: 18px; margin-bottom: 12px; color: var(--accent); }
+    .modal-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; width: 620px; max-width: 90%; padding: 24px; max-height: 85vh; overflow-y: auto; }
+    .modal-title { font-size: 18px; margin-bottom: 12px; color: var(--accent); font-weight: 700; }
+    .history-item { background: #090d16; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; }
+    .history-item .attempt-head { display: flex; justify-content: space-between; color: var(--accent); margin-bottom: 4px; font-weight: 600; }
+    .history-item .attempt-err { color: #fca5a5; font-family: monospace; }
     pre { background: #090d16; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; color: #cbd5e1; border: 1px solid var(--border); margin-top: 10px; }
   </style>
 </head>
@@ -98,7 +108,7 @@ function renderDashboardHTML(): string {
   <div class="container">
     <header>
       <div class="logo">
-        <span>🛡️ JobForge DLQ Remediation</span>
+        <span>🛡️ JobForge DLQ Remediation Dashboard</span>
       </div>
       <div class="nav-links">
         <a href="/admin/queues" class="btn-link" target="_blank">📊 Bull Board</a>
@@ -107,15 +117,23 @@ function renderDashboardHTML(): string {
       </div>
     </header>
 
+    <!-- Info Guidance Banner -->
+    <div class="info-banner">
+      <b>💡 How Dead-Letter Queue (DLQ) Remediation Works:</b><br>
+      • Jobs that exhaust all retry attempts or encounter poison-pill errors are quarantined here in <b>DEAD</b> status.<br>
+      • Click <b>🔄 Retry</b> to re-queue a dead job back to BullMQ with a clean slate. Test error simulations are automatically removed so remediated jobs succeed to 100%! <br>
+      • In <a href="/admin/queues" target="_blank"><b>Bull Board</b></a>, dead jobs appear under <b>jobforge-dlq</b> and the <b>FAILED</b> tab of the primary queue.
+    </div>
+
     <!-- Admin Authentication Bar -->
     <div class="auth-banner">
       <div>
-        <span><b>Admin Authentication:</b> <span id="authStatusText">Checking credentials...</span></span>
+        <span><b>Admin Status:</b> <span id="authStatusText">⚡ Checking credentials...</span></span>
       </div>
       <div class="auth-input-group">
         <input type="password" id="adminTokenInput" class="input" placeholder="Paste ADMIN JWT Token...">
         <button onclick="saveToken()" class="btn btn-primary">Save Token</button>
-        <button onclick="autoLoginAdmin()" class="btn btn-secondary" title="Logs in using default admin credentials">⚡ Quick Admin Login</button>
+        <button onclick="handleManualAutoLogin()" class="btn btn-secondary" title="Refreshes admin credentials">⚡ Force Refresh Admin</button>
       </div>
     </div>
 
@@ -131,11 +149,11 @@ function renderDashboardHTML(): string {
       </div>
       <div class="stat-card">
         <div class="stat-title">Most Common Failure</div>
-        <div id="statTopError" class="stat-val" style="font-size: 16px; font-weight: 500;">None</div>
+        <div id="statTopError" class="stat-val" style="font-size: 15px; font-weight: 500;">None</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">Oldest Quarantined Job</div>
-        <div id="statOldestJob" class="stat-val" style="font-size: 14px; font-weight: 500;">None</div>
+        <div id="statOldestJob" class="stat-val" style="font-size: 13px; font-weight: 500;">None</div>
       </div>
     </div>
 
@@ -209,18 +227,13 @@ function renderDashboardHTML(): string {
       localStorage.setItem('jobforge_admin_token', currentToken);
     }
 
-    if (currentToken) {
-      document.getElementById('adminTokenInput').value = currentToken;
-      document.getElementById('authStatusText').textContent = '✅ Token Saved';
-      document.getElementById('authStatusText').style.color = '#4ade80';
-    } else {
-      document.getElementById('authStatusText').textContent = '⚠️ Attempting admin auto-login...';
-      document.getElementById('authStatusText').style.color = '#facc15';
-      // Automatically attempt login with default admin credentials
-      autoLoginAdmin();
-    }
-
+    // Auto-login helper
     async function autoLoginAdmin() {
+      const statusText = document.getElementById('authStatusText');
+      if (statusText) {
+        statusText.textContent = '⚡ Authenticating as Admin...';
+        statusText.style.color = '#38bdf8';
+      }
       try {
         const res = await fetch('/api/v1/auth/login', {
           method: 'POST',
@@ -231,18 +244,35 @@ function renderDashboardHTML(): string {
         if (json.success && json.data && json.data.token) {
           currentToken = json.data.token;
           localStorage.setItem('jobforge_admin_token', currentToken);
-          document.getElementById('adminTokenInput').value = currentToken;
-          document.getElementById('authStatusText').textContent = '✅ Authenticated as Admin (admin@jobforge.com)';
-          document.getElementById('authStatusText').style.color = '#4ade80';
-          showToast('Authenticated as Admin');
-          loadDashboard();
+          const input = document.getElementById('adminTokenInput');
+          if (input) input.value = currentToken;
+          if (statusText) {
+            statusText.textContent = '✅ Authenticated as Admin (admin@jobforge.com)';
+            statusText.style.color = '#4ade80';
+          }
+          return currentToken;
         } else {
-          document.getElementById('authStatusText').textContent = '⚠️ Please paste an ADMIN token to enable buttons';
-          document.getElementById('authStatusText').style.color = '#facc15';
+          if (statusText) {
+            statusText.textContent = '⚠️ Auto-login failed. Please paste ADMIN token.';
+            statusText.style.color = '#f87171';
+          }
         }
       } catch (err) {
-        document.getElementById('authStatusText').textContent = '⚠️ Please paste an ADMIN token to enable buttons';
-        document.getElementById('authStatusText').style.color = '#facc15';
+        if (statusText) {
+          statusText.textContent = '⚠️ Network error during auto-login.';
+          statusText.style.color = '#f87171';
+        }
+      }
+      return null;
+    }
+
+    async function handleManualAutoLogin() {
+      const token = await autoLoginAdmin();
+      if (token) {
+        showToast('Fresh admin token acquired');
+        loadDashboard();
+      } else {
+        showToast('Could not acquire admin token', true);
       }
     }
 
@@ -251,7 +281,7 @@ function renderDashboardHTML(): string {
       if (!val) return;
       currentToken = val;
       localStorage.setItem('jobforge_admin_token', val);
-      document.getElementById('authStatusText').textContent = '✅ Token Saved';
+      document.getElementById('authStatusText').textContent = '✅ Custom Token Saved';
       document.getElementById('authStatusText').style.color = '#4ade80';
       showToast('Admin token saved');
       loadDashboard();
@@ -265,10 +295,24 @@ function renderDashboardHTML(): string {
       setTimeout(() => { toast.style.display = 'none'; }, 3500);
     }
 
+    // Authenticated API request with transparent auto-healing on 401/403
     async function apiRequest(path, options = {}) {
-      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      let headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
       if (currentToken) headers['Authorization'] = 'Bearer ' + currentToken;
-      return fetch('/api/v1/admin' + path, { ...options, headers });
+
+      let res = await fetch('/api/v1/admin' + path, { ...options, headers });
+
+      // If token is missing, expired, or non-admin, heal automatically
+      if (res.status === 401 || res.status === 403) {
+        console.warn('Admin token invalid or unauthorized. Refreshing admin credentials...');
+        localStorage.removeItem('jobforge_admin_token');
+        const freshToken = await autoLoginAdmin();
+        if (freshToken) {
+          headers['Authorization'] = 'Bearer ' + freshToken;
+          res = await fetch('/api/v1/admin' + path, { ...options, headers });
+        }
+      }
+      return res;
     }
 
     async function loadStats() {
@@ -278,9 +322,9 @@ function renderDashboardHTML(): string {
         const data = (await res.json()).data;
         document.getElementById('statTotalDead').textContent = data.totalDead;
         document.getElementById('statRecentDead').textContent = data.recentDead24h;
-        document.getElementById('statTopError').textContent = data.byError?.[0]?._id || 'None';
+        document.getElementById('statTopError').textContent = data.topErrors?.[0]?._id || data.byError?.[0]?._id || 'None';
         document.getElementById('statOldestJob').textContent = data.oldestJob?.updatedAt
-          ? new Date(data.oldestJob.updatedAt).toLocaleString()
+          ? new Date(data.oldestJob.updatedAt).toLocaleTimeString()
           : 'None';
       } catch (err) {
         console.error('Stats error', err);
@@ -295,7 +339,7 @@ function renderDashboardHTML(): string {
       try {
         const res = await apiRequest('/dead-letter-jobs' + query);
         if (res.status === 401 || res.status === 403) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #f87171; padding: 24px;">🔒 401/403 Unauthorized: Please provide a valid ADMIN JWT token above.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #f87171; padding: 24px;">🔒 401/403 Unauthorized: Please click <b>⚡ Force Refresh Admin</b> above.</td></tr>';
           return;
         }
 
@@ -308,8 +352,9 @@ function renderDashboardHTML(): string {
         tbody.innerHTML = data.map(j => {
           const userEmail = j.userId?.email || 'N/A';
           const failedAt = new Date(j.updatedAt).toLocaleTimeString();
+          const shortId = j.jobId.slice(0, 8);
           return '<tr>' +
-            '<td><code style="color: #38bdf8;">' + j.jobId.slice(0, 8) + '...</code></td>' +
+            '<td><code style="color: #38bdf8;" title="' + j.jobId + '">' + shortId + '...</code></td>' +
             '<td><span class="badge badge-type">' + j.type + '</span></td>' +
             '<td>' + j.attempts + ' / ' + j.maxAttempts + '</td>' +
             '<td><div class="error-text" title="' + (j.error || '') + '">' + (j.error || 'Unknown failure') + '</div></td>' +
@@ -354,7 +399,7 @@ function renderDashboardHTML(): string {
         });
         const json = await res.json();
         if (res.ok) {
-          showToast('Successfully re-queued ' + json.data.requeued + ' dead jobs!');
+          showToast('Successfully re-queued ' + (json.data?.requeued ?? 0) + ' dead jobs!');
           loadDashboard();
         } else {
           showToast(json.error || 'Bulk retry failed', true);
@@ -393,10 +438,25 @@ function renderDashboardHTML(): string {
         const json = await res.json();
         if (res.ok) {
           const job = json.data;
-          let html = '<div style="margin-bottom: 8px;"><b>Type:</b> ' + job.type + ' | <b>Attempts:</b> ' + job.attempts + '</div>';
-          html += '<div><b>Failure History Log:</b></div>';
-          html += '<pre>' + JSON.stringify(job.errorHistory || [], null, 2) + '</pre>';
-          html += '<div style="margin-top: 12px;"><b>Job Payload:</b></div>';
+          let html = '<div style="margin-bottom: 12px; font-size: 13px;">' +
+            '<b>Job Type:</b> <span class="badge badge-type">' + job.type + '</span> &nbsp;|&nbsp; ' +
+            '<b>Total Attempts:</b> ' + job.attempts + ' / ' + job.maxAttempts +
+          '</div>';
+
+          html += '<div style="font-weight: 600; margin-bottom: 6px; color: var(--accent);">Failed Attempt Chronology:</div>';
+          if (job.errorHistory && job.errorHistory.length > 0) {
+            html += job.errorHistory.map(h => {
+              const time = new Date(h.failedAt).toLocaleString();
+              return '<div class="history-item">' +
+                '<div class="attempt-head"><span>Attempt #' + h.attempt + '</span><span>' + time + '</span></div>' +
+                '<div class="attempt-err">' + (h.error || 'No error message recorded') + '</div>' +
+              '</div>';
+            }).join('');
+          } else {
+            html += '<div style="color: var(--text-muted); font-size: 12px; margin-bottom: 8px;">No attempt history records found.</div>';
+          }
+
+          html += '<div style="margin-top: 14px; font-weight: 600; color: var(--text-muted);">Payload at Failure:</div>';
           html += '<pre>' + JSON.stringify(job.payload || {}, null, 2) + '</pre>';
           body.innerHTML = html;
         } else {
@@ -416,7 +476,23 @@ function renderDashboardHTML(): string {
       loadDeadJobs();
     }
 
-    loadDashboard();
+    // Initialize: auto-login if needed, then load data
+    async function init() {
+      if (!currentToken) {
+        await autoLoginAdmin();
+      } else {
+        const input = document.getElementById('adminTokenInput');
+        if (input) input.value = currentToken;
+        const statusText = document.getElementById('authStatusText');
+        if (statusText) {
+          statusText.textContent = '✅ Token Saved';
+          statusText.style.color = '#4ade80';
+        }
+      }
+      loadDashboard();
+    }
+
+    init();
   </script>
 </body>
 </html>`;

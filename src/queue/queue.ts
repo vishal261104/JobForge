@@ -7,6 +7,7 @@ import env from '../config/env';
 // ── Constants ─────────────────────────────────────────────────
 
 export const QUEUE_NAME = 'jobforge';
+export const DLQ_QUEUE_NAME = 'jobforge-dlq';
 
 // ── Data Shape ────────────────────────────────────────────────
 
@@ -41,6 +42,23 @@ export const jobQueue = new Queue<QueueJobData>(QUEUE_NAME, {
 
 jobQueue.on('error', (err) => {
   logger.error({ err }, '❌  BullMQ Queue error');
+});
+
+/**
+ * Dedicated Dead-Letter Queue (DLQ) in BullMQ.
+ * Mirror for dead jobs that exceeded retry limits, making them directly visible
+ * and manageable in Bull Board alongside the primary jobforge queue.
+ */
+export const dlqQueue = new Queue<QueueJobData>(DLQ_QUEUE_NAME, {
+  connection: bullRedisConnection,
+  defaultJobOptions: {
+    removeOnComplete: false,
+    removeOnFail: false,
+  },
+});
+
+dlqQueue.on('error', (err) => {
+  logger.error({ err }, '❌  BullMQ DLQ Queue error');
 });
 
 // ── Enqueue Helper ────────────────────────────────────────────

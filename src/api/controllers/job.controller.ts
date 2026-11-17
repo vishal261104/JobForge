@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Job from '../../models/Job';
 import { JobStatus, JobPriority } from '../../types';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
-import { enqueueJob, jobQueue } from '../../queue/queue';
+import { enqueueJob, jobQueue, dlqQueue } from '../../queue/queue';
 import { publishJobEvent } from '../../utils/eventBus';
 import logger from '../../utils/logger';
 
@@ -179,6 +179,15 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
     job.attempts = 0;
   }
 
+  // Clear simulated error flags so retry succeeds on remediation
+  if (job.payload && (job.payload as Record<string, unknown>).simulateError) {
+    const mutablePayload = { ...(job.payload as Record<string, unknown>) };
+    delete mutablePayload.simulateError;
+    delete mutablePayload.errorMessage;
+    job.payload = mutablePayload;
+    job.markModified('payload');
+  }
+
   job.status = JobStatus.PENDING;
   job.error = undefined;
   await job.save();
@@ -188,6 +197,12 @@ export async function retryJob(req: Request, res: Response): Promise<void> {
     const bullJobId = await enqueueJob(job);
     job.bullJobId = bullJobId;
     await job.save();
+
+    // Remove from BullMQ dlqQueue mirror
+    try {
+      const dlqJob = await dlqQueue.getJob(`dlq-${job.jobId}`);
+      if (dlqJob) await dlqJob.remove();
+    } catch {}
 
     await publishJobEvent({
       jobId: job.jobId,
