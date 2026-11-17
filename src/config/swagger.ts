@@ -26,6 +26,7 @@ const spec = {
   },
 
   servers: [
+    { url: '/api/v1', description: 'Current Server (Production / Active Domain)' },
     { url: 'http://localhost:3000/api/v1', description: 'Local Development' },
   ],
 

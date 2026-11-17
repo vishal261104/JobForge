@@ -44,6 +44,68 @@ export function createApp(): Application {
   );
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+  // ── Root Landing Portal ──────────────────────────────────────
+  app.get('/', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobForge — Background Job Processing Platform</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; max-width: 640px; width: 100%; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+    h1 { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 32px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+    .link-card { background: #0f172a; border: 1px solid var(--border); border-radius: 10px; padding: 18px; text-decoration: none; color: var(--text); transition: all 0.2s; display: block; }
+    .link-card:hover { border-color: var(--accent); transform: translateY(-2px); background: #131d33; }
+    .title { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .badge { display: inline-block; margin-top: 24px; font-size: 12px; color: #4ade80; background: #10b98115; border: 1px solid #10b98140; padding: 4px 12px; border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 JobForge Platform</h1>
+    <p>A production-grade distributed background job processing system built with TypeScript, Node.js, Express, BullMQ, Redis, and MongoDB.</p>
+    
+    <div class="grid">
+      <a href="/api-docs" class="link-card">
+        <div class="title">📖 Swagger API Docs</div>
+        <div class="desc">Interactive REST API explorer with "Try it out" buttons for all endpoints.</div>
+      </a>
+      <a href="/admin/dlq" class="link-card">
+        <div class="title">🛠️ DLQ Dashboard</div>
+        <div class="desc">Admin UI to inspect error logs, retry dead jobs, bulk-retry, and purge poison pills.</div>
+      </a>
+      <a href="/admin/queues" class="link-card">
+        <div class="title">📊 Bull Board UI</div>
+        <div class="desc">Real-time queue monitoring (Active, Waiting, Completed, Failed, Delayed).</div>
+      </a>
+      <a href="/health" class="link-card">
+        <div class="title">❤️ System Health</div>
+        <div class="desc">Deep connectivity and latency check for MongoDB, Redis, and BullMQ.</div>
+      </a>
+    </div>
+
+    <div class="badge">● System Online & Deployed</div>
+  </div>
+</body>
+</html>`);
+  });
+
   // ── Health Check (Stage 9) ──────────────────────────────────────
   // Deep check: MongoDB + Redis + BullMQ. Returns 503 when unhealthy.
   app.get('/health', healthCheck);
