@@ -2,14 +2,49 @@ import IORedis from 'ioredis';
 import logger from '../utils/logger';
 import env from './env';
 
-// ── Redis Client Factory ──────────────────────────────────────
+// ── Connection Parser ─────────────────────────────────────────
 
-function createRedisClient(label: string): IORedis {
-  const client = new IORedis({
+function getResolvedRedisConfig(): { host: string; port: number; password?: string; tls?: object } {
+  const rawCandidate =
+    env.REDIS_URL ||
+    (env.REDIS_HOST.includes('://') || env.REDIS_HOST.startsWith('redis-cli')
+      ? env.REDIS_HOST
+      : null);
+
+  if (rawCandidate) {
+    const cleanUrl = rawCandidate.replace(/^redis-cli\s+-u\s+/i, '').trim();
+    try {
+      const parsed = new URL(cleanUrl);
+      const isTLS = parsed.protocol === 'rediss:' || env.REDIS_TLS;
+      return {
+        host: parsed.hostname,
+        port: parsed.port ? Number(parsed.port) : 6379,
+        password: parsed.password || env.REDIS_PASSWORD || undefined,
+        ...(isTLS && { tls: {} }),
+      };
+    } catch (err) {
+      logger.warn({ err }, '⚠️ Could not parse Redis URL, falling back to standard config');
+    }
+  }
+
+  return {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
     password: env.REDIS_PASSWORD || undefined,
     ...(env.REDIS_TLS && { tls: {} }),
+  };
+}
+
+// ── Redis Client Factory ──────────────────────────────────────
+
+function createRedisClient(label: string): IORedis {
+  const resolved = getResolvedRedisConfig();
+
+  const client = new IORedis({
+    host: resolved.host,
+    port: resolved.port,
+    password: resolved.password,
+    ...(resolved.tls && { tls: resolved.tls }),
 
     // Retry strategy: exponential backoff up to 30s
     retryStrategy(times: number) {
