@@ -24,21 +24,25 @@ export async function sendEmailProcessor(
   logger.info({ jobId, to: payload.to }, '📧  Sending email...');
 
   // ── Step 1: Validate required fields (10%)
-  await job.updateProgress(10);
+  await job.updateProgress({ percent: 10, step: 'Validating email recipient and content' });
+  await job.log('Step 1/4: Validating email payload (10%)');
   if (!payload.to || !payload.subject) {
     throw new NonRetryableError('Email payload missing required fields: to, subject');
   }
 
   // ── Step 2: Build the message (30%)
-  await job.updateProgress(30);
+  await job.updateProgress({ percent: 30, step: 'Building MIME message and headers' });
+  await job.log('Step 2/4: Assembling email message (30%)');
   await simulateLatency(300, 800);
 
   // ── Step 3: Connect to mail provider (60%)
-  await job.updateProgress(60);
+  await job.updateProgress({ percent: 60, step: 'Connecting to SMTP relay provider' });
+  await job.log('Step 3/4: Transmitting via SMTP relay (60%)');
   await simulateLatency(500, 1_200);
 
   // ── Step 4: Deliver & get delivery receipt (100%)
-  await job.updateProgress(100);
+  await job.updateProgress({ percent: 100, step: 'Delivered successfully' });
+  await job.log('Step 4/4: Delivery acknowledged (100%)');
 
   const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const result = {

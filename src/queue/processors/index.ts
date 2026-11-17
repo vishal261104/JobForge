@@ -64,10 +64,29 @@ export async function dispatch(job: Job<QueueJobData>): Promise<Record<string, u
     const totalMs = Math.min(payload.simulateDelayMs, 30_000);
     const steps = [15, 30, 50, 70, 85, 100];
     const stepTime = totalMs / steps.length;
+    const stepDescriptions: Record<number, string> = {
+      15: 'Validating payload and preparing worker environment',
+      30: 'Querying and streaming dataset',
+      50: 'Applying transformations and business logic',
+      70: 'Generating output artifacts and compression',
+      85: 'Finalizing formatting and security checks',
+      100: 'Processing finished successfully',
+    };
+
     for (const pct of steps) {
-      await job.updateProgress(pct);
+      const stepText = stepDescriptions[pct] || `Processing (${pct}%)`;
+      // Update progress object (Bull Board displays this in the Progress tab)
+      await job.updateProgress({
+        percent: pct,
+        status: 'PROCESSING',
+        step: stepText,
+        updatedAt: new Date().toISOString(),
+      });
+      // Append to BullMQ log (Bull Board displays this in the Logs tab)
+      await job.log(`[${new Date().toLocaleTimeString()}] Progress ${pct}% - ${stepText}`);
       await new Promise((r) => setTimeout(r, stepTime));
     }
+
     return {
       simulated: true,
       durationMs: totalMs,

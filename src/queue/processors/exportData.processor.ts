@@ -27,21 +27,25 @@ export async function exportDataProcessor(
   );
 
   // ── Step 1: Validate (10%)
-  await job.updateProgress(10);
+  await job.updateProgress({ percent: 10, step: 'Validating export entity' });
+  await job.log('Step 1/4: Validating export filters (10%)');
   if (!payload.entity || !payload.format) {
     throw new NonRetryableError('Export payload missing required fields: entity, format');
   }
 
   // ── Step 2: Build query & stream rows (40%)
-  await job.updateProgress(40);
+  await job.updateProgress({ percent: 40, step: 'Streaming records from database' });
+  await job.log('Step 2/4: Streaming table rows (40%)');
   await simulateLatency(500, 1_200);
 
   // ── Step 3: Serialize to target format (75%)
-  await job.updateProgress(75);
+  await job.updateProgress({ percent: 75, step: `Serializing rows to ${payload.format}` });
+  await job.log(`Step 3/4: Serializing output to ${payload.format} (75%)`);
   await simulateLatency(600, 1_500);
 
   // ── Step 4: Upload to storage (100%)
-  await job.updateProgress(100);
+  await job.updateProgress({ percent: 100, step: 'Upload to storage complete' });
+  await job.log('Step 4/4: Upload complete (100%)');
 
   const fileKey = `exports/${payload.entity}/${Date.now()}.${payload.format}`;
   const rowCount = Math.floor(Math.random() * 50_000) + 500;

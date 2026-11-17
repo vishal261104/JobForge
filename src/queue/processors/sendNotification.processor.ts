@@ -35,7 +35,8 @@ export async function sendNotificationProcessor(
   );
 
   // ── Step 1: Validate (10%)
-  await job.updateProgress(10);
+  await job.updateProgress({ percent: 10, step: 'Validating notification recipient' });
+  await job.log('Step 1/4: Validating recipient data (10%)');
   if (!payload.userId || !payload.channel || !payload.title || !payload.message) {
     throw new NonRetryableError(
       'Notification payload missing required fields: userId, channel, title, message'
@@ -43,16 +44,19 @@ export async function sendNotificationProcessor(
   }
 
   // ── Step 2: Resolve user device / contact (40%)
-  await job.updateProgress(40);
+  await job.updateProgress({ percent: 40, step: `Resolving user device tokens for channel ${payload.channel}` });
+  await job.log(`Step 2/4: Device lookup complete (${payload.channel})`);
   await simulateLatency(100, 300);
 
   // ── Step 3: Deliver via channel (90%)
-  await job.updateProgress(90);
+  await job.updateProgress({ percent: 90, step: `Pushing payload via ${payload.channel} gateway` });
+  await job.log(`Step 3/4: Gateway transfer in progress (90%)`);
   const [min, max] = CHANNEL_LATENCY[payload.channel] ?? [200, 600];
   await simulateLatency(min, max);
 
   // ── Step 4: Record delivery receipt (100%)
-  await job.updateProgress(100);
+  await job.updateProgress({ percent: 100, step: 'Delivery confirmed' });
+  await job.log('Step 4/4: Notification receipt acknowledged (100%)');
 
   const notificationId = `ntf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const result = {

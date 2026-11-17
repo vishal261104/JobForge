@@ -27,25 +27,30 @@ export async function generateReportProcessor(
   );
 
   // ── Step 1: Validate parameters (10%)
-  await job.updateProgress(10);
+  await job.updateProgress({ percent: 10, step: 'Validating report parameters' });
+  await job.log('Step 1/5: Validating parameters (10%)');
   if (!payload.reportType || !payload.format) {
     throw new NonRetryableError('Report payload missing required fields: reportType, format');
   }
 
   // ── Step 2: Query data sources (35%)
-  await job.updateProgress(35);
+  await job.updateProgress({ percent: 35, step: 'Querying analytical database' });
+  await job.log('Step 2/5: Querying database sources (35%)');
   await simulateLatency(600, 1_500);
 
   // ── Step 3: Aggregate & transform data (65%)
-  await job.updateProgress(65);
+  await job.updateProgress({ percent: 65, step: 'Aggregating and computing metrics' });
+  await job.log('Step 3/5: Aggregating report metrics (65%)');
   await simulateLatency(800, 2_000);
 
   // ── Step 4: Render document (90%)
-  await job.updateProgress(90);
+  await job.updateProgress({ percent: 90, step: 'Rendering PDF / spreadsheet layout' });
+  await job.log('Step 4/5: Rendering document (90%)');
   await simulateLatency(400, 1_000);
 
   // ── Step 5: Upload to storage (100%)
-  await job.updateProgress(100);
+  await job.updateProgress({ percent: 100, step: 'Upload complete' });
+  await job.log('Step 5/5: Document uploaded to storage (100%)');
 
   const fileKey = `reports/${payload.reportType}/${Date.now()}.${payload.format}`;
   const result = {

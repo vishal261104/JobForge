@@ -27,13 +27,15 @@ export async function processImageProcessor(
   );
 
   // ── Step 1: Validate (10%)
-  await job.updateProgress(10);
+  await job.updateProgress({ percent: 10, step: 'Validating image parameters' });
+  await job.log('Step 1/4: Validating image URL and operations (10%)');
   if (!payload.imageUrl || !payload.operations?.length) {
     throw new NonRetryableError('Image payload missing required fields: imageUrl, operations');
   }
 
   // ── Step 2: Download source image (30%)
-  await job.updateProgress(30);
+  await job.updateProgress({ percent: 30, step: 'Downloading source image' });
+  await job.log('Step 2/4: Downloaded original asset (30%)');
   await simulateLatency(400, 1_000);
 
   // ── Step 3: Apply operations sequentially (30% → 85%)
@@ -41,13 +43,19 @@ export async function processImageProcessor(
   let progress = 30;
   for (const op of payload.operations) {
     progress += progressPerOp;
-    await job.updateProgress(Math.min(progress, 85));
+    const currentPct = Math.min(progress, 85);
+    await job.updateProgress({
+      percent: currentPct,
+      step: `Applying operation: ${op}`,
+    });
+    await job.log(`Step 3/4: Applied image filter [${op}] (${currentPct}%)`);
     logger.debug({ jobId, op }, `🔧  Applying operation: ${op}`);
     await simulateLatency(200, 600);
   }
 
   // ── Step 4: Upload output image (100%)
-  await job.updateProgress(100);
+  await job.updateProgress({ percent: 100, step: 'Processed image uploaded to CDN' });
+  await job.log('Step 4/4: Exported to CDN storage (100%)');
 
   const ext = payload.outputFormat ?? 'jpeg';
   const outputKey = `images/processed/${Date.now()}.${ext}`;
